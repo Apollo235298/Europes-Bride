@@ -23,7 +23,7 @@ function StrategySnapshot({ data, onOpen, delay }) {
         <span className="panel-icon">{EBIcons.check}</span>
         <div>
           <h2 className="panel-title">Strategy Progress</h2>
-          <p className="panel-sub">SEO Foundation · CRM Setup · Google Business Profile</p>
+          <p className="panel-sub">{data.strategy.map((p) => p.title).join(" · ")}</p>
         </div>
       </div>
       <div className="snap-bar">
@@ -43,8 +43,8 @@ function DashboardTab({ data, role, goStrategy }) {
   return (
     <div className="tab-body">
       <div className="kpi-grid">
-        <KpiCard label="Website sessions" value={k.sessions.value} trend={k.sessions.trend} spark={data.sessionsTrend} delay={0} icon={EBIcons.traffic}></KpiCard>
-        <KpiCard label="AI referrals" value={k.aiReferrals.value} trend={k.aiReferrals.trend} spark={data.ai.trend} delay={90} icon={EBIcons.ai}></KpiCard>
+        <KpiCard label="Website sessions" value={k.sessions.value} trend={k.sessions.trend} spark={data.sessionsTrend} delay={0} icon={EBIcons.traffic} note="Analytics being set up"></KpiCard>
+        <KpiCard label="AI referrals" value={k.aiReferrals.value} trend={k.aiReferrals.trend} spark={data.ai.trend} delay={90} icon={EBIcons.ai} note="Tracking starts with Analytics"></KpiCard>
         <KpiCard label="GBP actions" value={k.gbpActions.value} trend={k.gbpActions.trend} delay={180} icon={EBIcons.pin} note="Calls · directions · clicks"></KpiCard>
         <KpiCard label="Revenue attributed" value={revenue} prefix="$" trend={k.bookings.trend} delay={270} icon={EBIcons.dollar} note={`${k.bookings.value} bookings × $${data.meta.bookingValue}`}></KpiCard>
       </div>

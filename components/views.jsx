@@ -112,8 +112,8 @@ export function CommentsPanel({ role, delay }) {
     <Panel title="Notes & Feedback" sub="Leave a comment — your team sees it instantly" icon={EBIcons.comment} delay={delay} className="span-3 comments-panel">
       <div className="comment-thread">
         <div className="comment-bubble agency">
-          <div className="comment-meta">Rank Local Now · Jun 2</div>
-          <div>May report is live — AI referrals nearly doubled. Review the next-month focus and drop any questions here.</div>
+          <div className="comment-meta">Rank Local Now · Jun 12</div>
+          <div>Welcome to your growth portal. Leave a note or question here anytime — I see it right away. The first full monthly report lands June 30.</div>
         </div>
         {items.map((c, i) => (
           <div key={c.id || i} className={"comment-bubble" + (c.role === "admin" ? " agency" : "")}>

@@ -17,9 +17,10 @@ create table if not exists public.dashboard_state (
 );
 
 -- Comments: general thread (task_id null) and per-task threads (task_id = strategy task id).
+-- author references profiles (not auth.users) so the app's `profiles(...)` join works in PostgREST.
 create table if not exists public.comments (
   id bigint generated always as identity primary key,
-  author uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  author uuid not null default auth.uid() references public.profiles (id) on delete cascade,
   task_id text,
   body text not null check (char_length(body) between 1 and 2000),
   created_at timestamptz not null default now()

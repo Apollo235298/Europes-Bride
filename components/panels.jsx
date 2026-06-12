@@ -16,6 +16,7 @@ export const EBIcons = {
 };
 
 export function TrendChip({ value }) {
+  if (value == null) return <span className="trend-chip" style={{ color: "var(--muted)" }}>new</span>;
   const up = value >= 0;
   return (
     <span className={"trend-chip " + (up ? "up" : "down")}>
@@ -48,6 +49,7 @@ export function Panel({ title, sub, icon, right, children, className = "", delay
 
 export function KpiCard({ label, value, prefix = "", trend, spark, delay = 0, icon, note }) {
   const m = useMountedFlag();
+  const hasSpark = spark && spark.some((v) => v); // flat-zero series = nothing tracked yet
   return (
     <section className="glass kpi" style={enterStyle(m, delay)}>
       <div className="kpi-top">
@@ -57,30 +59,48 @@ export function KpiCard({ label, value, prefix = "", trend, spark, delay = 0, ic
       <div className="kpi-value"><CountUp value={value} prefix={prefix}></CountUp></div>
       <div className="kpi-label">{label}</div>
       <div className="kpi-foot">
-        {spark ? <Sparkline data={spark}></Sparkline> : <span className="kpi-note">{note}</span>}
+        {hasSpark ? <Sparkline data={spark}></Sparkline> : <span className="kpi-note">{note}</span>}
       </div>
     </section>
   );
 }
 
+// Shown in place of a chart while the data source (Analytics, CRM…) is still being set up.
+function SetupState({ title, body }) {
+  return (
+    <div style={{ display: "grid", gap: 6, placeContent: "center", textAlign: "center", padding: "34px 20px", border: "1px dashed rgba(244,241,234,0.16)", borderRadius: 14, margin: "4px 0" }}>
+      <div style={{ fontSize: 14, fontWeight: 600 }}>{title}</div>
+      <div style={{ fontSize: 13, color: "var(--muted)", maxWidth: 380, margin: "0 auto", lineHeight: 1.5 }}>{body}</div>
+    </div>
+  );
+}
+
 export function TrafficPanel({ data, delay }) {
   const total = data.sources.reduce((s, x) => s + x.value, 0);
+  const hasData = data.sessionsTrend.some((v) => v) || total > 0;
   return (
-    <Panel title="Website Traffic" sub="Google Analytics · last 30 days" icon={EBIcons.traffic} delay={delay}
-      right={<span className="live-pill"><span className="live-dot"></span>Synced</span>} className="span-7">
-      <AreaChart data={data.sessionsTrend} labels={data.weekLabels}></AreaChart>
-      <div className="src-row">
-        <DonutChart segments={data.sources} size={150} thickness={14} centerValue={total.toLocaleString()} centerLabel="Sessions"></DonutChart>
-        <ul className="legend">
-          {data.sources.map((s) => (
-            <li key={s.label}>
-              <span className="legend-dot" style={{ background: s.color }}></span>
-              <span className="legend-label">{s.label}</span>
-              <span className="legend-val tabular">{Math.round((s.value / total) * 100)}%</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+    <Panel title="Website Traffic" sub={hasData ? "Google Analytics · last 30 days" : "Google Analytics · being set up"} icon={EBIcons.traffic} delay={delay}
+      right={<span className="live-pill"><span className="live-dot"></span>{hasData ? "Synced" : "Coming soon"}</span>} className="span-7">
+      {hasData ? (
+        <>
+          <AreaChart data={data.sessionsTrend} labels={data.weekLabels}></AreaChart>
+          <div className="src-row">
+            <DonutChart segments={data.sources} size={150} thickness={14} centerValue={total.toLocaleString()} centerLabel="Sessions"></DonutChart>
+            <ul className="legend">
+              {data.sources.map((s) => (
+                <li key={s.label}>
+                  <span className="legend-dot" style={{ background: s.color }}></span>
+                  <span className="legend-label">{s.label}</span>
+                  <span className="legend-val tabular">{Math.round((s.value / total) * 100)}%</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </>
+      ) : (
+        <SetupState title="Analytics setup in progress"
+          body="Google Analytics is being connected to europesbride.com. Once it's live, this panel shows visits, traffic sources, and trends — building toward the first full month of data."></SetupState>
+      )}
     </Panel>
   );
 }
@@ -88,53 +108,73 @@ export function TrafficPanel({ data, delay }) {
 export function AIPanel({ data, delay }) {
   const ai = data.ai;
   const max = Math.max(...ai.engines.map((e) => e.value));
+  const hasData = ai.total > 0 || ai.citations > 0;
   return (
     <Panel title="AI Visibility" sub="Referrals & citations from AI assistants" icon={EBIcons.ai} delay={delay} className="span-5 ai-panel">
-      <div className="ai-hero">
-        <div>
-          <div className="ai-big"><CountUp value={ai.total}></CountUp></div>
-          <div className="kpi-label">AI referral sessions</div>
-        </div>
-        <div className="ai-side">
-          <div><span className="tabular ai-stat">{ai.citations}</span><span className="ai-stat-label">citations tracked</span></div>
-          <div><span className="tabular ai-stat">{ai.share}%</span><span className="ai-stat-label">of all traffic</span></div>
-        </div>
-      </div>
-      <div style={{ display: "grid", gap: 12, marginTop: 18 }}>
-        {ai.engines.map((e, i) => (
-          <HBar key={e.label} label={e.label} value={e.value} max={max} color="var(--accent2)" delay={i * 120}></HBar>
-        ))}
-      </div>
-      <div className="ai-queries">
-        <div className="micro-label">Cited for</div>
-        <div className="query-chips">
-          {ai.topQueries.map((q) => <span key={q} className="query-chip">"{q}"</span>)}
-        </div>
-      </div>
+      {hasData ? (
+        <>
+          <div className="ai-hero">
+            <div>
+              <div className="ai-big"><CountUp value={ai.total}></CountUp></div>
+              <div className="kpi-label">AI referral sessions</div>
+            </div>
+            <div className="ai-side">
+              <div><span className="tabular ai-stat">{ai.citations}</span><span className="ai-stat-label">citations tracked</span></div>
+              <div><span className="tabular ai-stat">{ai.share}%</span><span className="ai-stat-label">of all traffic</span></div>
+            </div>
+          </div>
+          <div style={{ display: "grid", gap: 12, marginTop: 18 }}>
+            {ai.engines.map((e, i) => (
+              <HBar key={e.label} label={e.label} value={e.value} max={max} color="var(--accent2)" delay={i * 120}></HBar>
+            ))}
+          </div>
+          {ai.topQueries.length ? (
+            <div className="ai-queries">
+              <div className="micro-label">Cited for</div>
+              <div className="query-chips">
+                {ai.topQueries.map((q) => <span key={q} className="query-chip">"{q}"</span>)}
+              </div>
+            </div>
+          ) : null}
+        </>
+      ) : (
+        <SetupState title="Tracking starts with Analytics"
+          body="Once Google Analytics is live, visits referred by ChatGPT, Perplexity, Gemini, and Copilot are tracked here — a growing source of bridal shoppers."></SetupState>
+      )}
     </Panel>
   );
 }
 
 export function GBPPanel({ data, delay }) {
   const gbp = data.gbp;
+  const hasInsights = gbp.views > 0;
   return (
-    <Panel title="Google Business Profile" sub="Profile performance · last 30 days" icon={EBIcons.pin} delay={delay} className="span-4">
+    <Panel title="Google Business Profile" sub={hasInsights ? "Profile performance · last 30 days" : "Live rating & reviews from Google"} icon={EBIcons.pin} delay={delay} className="span-4">
       <div className="gbp-stats">
-        <div>
-          <div className="gbp-num"><CountUp value={gbp.views}></CountUp></div>
-          <div className="kpi-label">Profile views</div>
-        </div>
+        {hasInsights ? (
+          <div>
+            <div className="gbp-num"><CountUp value={gbp.views}></CountUp></div>
+            <div className="kpi-label">Profile views</div>
+          </div>
+        ) : null}
         <div className="gbp-rating">
           <span className="rating-star">{EBIcons.star}</span>
           <span className="tabular" style={{ fontSize: 22, fontWeight: 600 }}>{gbp.rating.toFixed(1)}</span>
-          <span className="ai-stat-label">{gbp.reviews} reviews · {gbp.newReviews} new</span>
+          <span className="ai-stat-label">{gbp.reviews} reviews{gbp.newReviews != null ? ` · ${gbp.newReviews} new` : ""}</span>
         </div>
       </div>
-      <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
-        {gbp.actions.map((a, i) => (
-          <HBar key={a.label} label={a.label} value={a.value} max={a.max} delay={i * 120}></HBar>
-        ))}
-      </div>
+      {hasInsights ? (
+        <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
+          {gbp.actions.map((a, i) => (
+            <HBar key={a.label} label={a.label} value={a.value} max={a.max} delay={i * 120}></HBar>
+          ))}
+        </div>
+      ) : (
+        <div style={{ marginTop: 16 }}>
+          <SetupState title="Profile insights coming"
+            body="Views, calls, and direction requests from the Google profile will be reported here starting with the Month 1 report."></SetupState>
+        </div>
+      )}
     </Panel>
   );
 }
@@ -146,21 +186,28 @@ export function BookingsPanel({ data, delay }) {
   return (
     <Panel title="CRM Bookings" sub={`${count} bookings × $${data.meta.bookingValue} attributed value`} icon={EBIcons.calendar} delay={delay} className="span-5"
       right={<div className="revenue-tag"><span className="tabular"><CountUp value={revenue} prefix="$"></CountUp></span><span>attributed</span></div>}>
-      <ul className="booking-list">
-        {data.bookings.map((b, i) => (
-          <li key={b.name + b.date} className="booking-row" style={enterStyle(m, 300 + i * 70)}>
-            <span className="avatar">{b.name.charAt(0)}</span>
-            <span className="booking-main">
-              <span className="booking-name">{b.name}</span>
-              <span className="booking-service">{b.service}</span>
-            </span>
-            <span className={"source-chip" + (b.source === "ChatGPT" || b.source === "Perplexity" ? " ai-src" : "")}>{b.source}</span>
-            <span className="booking-date">{b.date}</span>
-            <span className="booking-val tabular">${data.meta.bookingValue}</span>
-          </li>
-        ))}
-      </ul>
-      <p className="panel-foot">Showing {data.bookings.length} of {count} bookings this period</p>
+      {data.bookings.length ? (
+        <>
+          <ul className="booking-list">
+            {data.bookings.map((b, i) => (
+              <li key={b.name + b.date} className="booking-row" style={enterStyle(m, 300 + i * 70)}>
+                <span className="avatar">{b.name.charAt(0)}</span>
+                <span className="booking-main">
+                  <span className="booking-name">{b.name}</span>
+                  <span className="booking-service">{b.service}</span>
+                </span>
+                <span className={"source-chip" + (b.source === "ChatGPT" || b.source === "Perplexity" ? " ai-src" : "")}>{b.source}</span>
+                <span className="booking-date">{b.date}</span>
+                <span className="booking-val tabular">${data.meta.bookingValue}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="panel-foot">Showing {data.bookings.length} of {count} bookings this period</p>
+        </>
+      ) : (
+        <SetupState title="Booking tracking launches with the CRM"
+          body="Once GoHighLevel is set up, every appointment is logged here with its source — so you can see exactly where brides are finding you."></SetupState>
+      )}
     </Panel>
   );
 }

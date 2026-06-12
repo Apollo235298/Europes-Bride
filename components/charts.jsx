@@ -57,9 +57,10 @@ export function AreaChart({ data, labels, gradId = "eb-area" }) {
   const mounted = useMountedFlag();
   const W = 640, H = 210, padX = 8, padTop = 18, padBot = 26;
   const min = Math.min(...data) * 0.9, max = Math.max(...data) * 1.05;
+  const span = (max - min) || 1;
   const pts = data.map((v, i) => [
     padX + (i / (data.length - 1)) * (W - padX * 2),
-    padTop + (1 - (v - min) / (max - min)) * (H - padTop - padBot)
+    padTop + (1 - (v - min) / span) * (H - padTop - padBot)
   ]);
   const line = smoothPath(pts);
   const area = `${line} L ${pts[pts.length - 1][0]},${H - padBot} L ${pts[0][0]},${H - padBot} Z`;
@@ -110,7 +111,7 @@ export function Sparkline({ data, width = 120, height = 36, stroke = "var(--acce
 export function DonutChart({ segments, size = 168, thickness = 16, centerLabel, centerValue }) {
   const mounted = useMountedFlag();
   const r = (size - thickness) / 2, c = 2 * Math.PI * r;
-  const total = segments.reduce((s, x) => s + x.value, 0);
+  const total = segments.reduce((s, x) => s + x.value, 0) || 1;
   let offset = 0;
   return (
     <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
@@ -139,7 +140,7 @@ export function DonutChart({ segments, size = 168, thickness = 16, centerLabel, 
 
 export function HBar({ label, value, max, color = "var(--accent)", suffix = "", delay = 0 }) {
   const mounted = useMountedFlag();
-  const pct = Math.round((value / max) * 100);
+  const pct = Math.round((value / (max || 1)) * 100);
   return (
     <div style={{ display: "grid", gap: 6 }}>
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
